@@ -1,0 +1,12 @@
+{
+  "name": "gfa-smartchannel-setter",
+  "version": "1.0.0",
+  "description": "네이버 GFA 스마트채널 소재 셋팅툴 (세트 임시저장 → 광고그룹 연결 → API 발행)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

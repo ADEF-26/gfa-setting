@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GFA 스마트채널 셋팅툴</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171922; --panel2:#1d2029; --border:#2a2e3a;
+  --text:#e7e9ee; --sub:#9aa1b0; --accent:#03c75a; --accent2:#02b350;
+  --warn:#ff5d5d; --warnbg:#2a1a1c; --ok:#3ecf8e; --okbg:#122a20; --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+  font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:13px;}
+header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+header h1{font-size:15px;margin:0;font-weight:700;}
+.badge{font-size:10.5px;color:var(--sub);background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:3px 9px;}
+#cfgWarn{display:none;color:var(--warn);background:var(--warnbg);border:1px solid #503036;border-radius:8px;padding:4px 10px;font-size:11.5px;}
+main{display:grid;grid-template-columns:340px 1fr 360px;gap:0;min-height:calc(100vh - 55px);align-items:stretch;}
+.col{padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:calc(100vh - 55px);}
+#colTree{background:var(--panel);border-right:1px solid var(--border);}
+#colPublish{background:var(--panel);border-left:1px solid var(--border);}
+h2{font-size:12.5px;margin:0;color:var(--sub);letter-spacing:.4px;text-transform:uppercase;}
+.card{background:var(--panel2);border:1px solid var(--border);border-radius:var(--radius);padding:12px;display:flex;flex-direction:column;gap:8px;}
+input,textarea,select{background:#12141b;border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 9px;font-size:12.5px;width:100%;}
+input:focus,textarea:focus{outline:1px solid var(--accent);}
+button{background:var(--panel);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 11px;font-size:12.5px;cursor:pointer;white-space:nowrap;}
+button:hover{border-color:var(--accent);}
+button.primary{background:var(--accent);border-color:var(--accent);color:#052b16;font-weight:700;}
+button.primary:hover{background:var(--accent2);}
+button.danger{color:var(--warn);}
+button:disabled{opacity:.45;cursor:not-allowed;}
+.row{display:flex;gap:6px;align-items:center;}
+.grow{flex:1;}
+.muted{color:var(--sub);font-size:11.5px;}
+/* 트리 */
+.acc{border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.accHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#191c26;cursor:pointer;}
+.accHead b{font-size:12.5px;}
+.tree{padding:6px 8px;display:flex;flex-direction:column;gap:4px;}
+.camp{margin-left:2px;}
+.campHead{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;cursor:pointer;}
+.campHead:hover{background:#20232f;}
+.adsets{margin-left:18px;display:flex;flex-direction:column;gap:2px;}
+.adsetRow{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:6px;}
+.adsetRow:hover{background:#20232f;}
+.adsetRow input[type=checkbox]{width:auto;}
+.chev{color:var(--sub);width:12px;display:inline-block;transition:.15s;}
+.open>.campHead .chev,.acc.open>.accHead .chev{transform:rotate(90deg);}
+.hidden{display:none;}
+.pgc{font-size:10px;color:var(--sub);background:#12141b;border-radius:4px;padding:1px 5px;}
+.pgc.sc{color:var(--accent);}
+/* 세트 */
+.setCard{border-left:4px solid var(--accent);}
+.setCard.active{outline:1px solid var(--accent);}
+.setTitle{display:flex;align-items:center;gap:8px;}
+.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px;}
+.thumb{position:relative;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:#fff;}
+.thumb img{display:block;height:44px;width:auto;max-width:210px;object-fit:contain;}
+.thumb .tinfo{position:absolute;left:0;bottom:0;right:0;background:rgba(0,0,0,.72);color:#fff;font-size:9.5px;padding:1px 4px;display:flex;justify-content:space-between;}
+.thumb .tx{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.7);color:#fff;border:none;border-radius:4px;font-size:10px;padding:0 4px;cursor:pointer;}
+.dropzone{border:1.5px dashed var(--border);border-radius:8px;padding:12px;text-align:center;color:var(--sub);font-size:11.5px;cursor:pointer;}
+.dropzone.over{border-color:var(--accent);color:var(--accent);background:#10231a;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{display:inline-flex;align-items:center;gap:5px;background:#12141b;border:1px solid var(--border);border-radius:14px;padding:2px 8px;font-size:11px;}
+.chip button{border:none;background:none;color:var(--warn);padding:0;font-size:12px;}
+.setGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+label.f{font-size:10.5px;color:var(--sub);display:flex;flex-direction:column;gap:3px;}
+/* 로그 */
+#log{background:#0c0e13;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:11px;min-height:120px;max-height:45vh;overflow-y:auto;white-space:pre-wrap;word-break:break-all;}
+.lok{color:var(--ok);} .lerr{color:var(--warn);} .linfo{color:var(--sub);}
+.pubSel{display:flex;align-items:center;gap:6px;padding:4px 0;}
+.pubSel input{width:auto;}
+</style>
+</head>
+<body>
+<header>
+  <h1>네이버 GFA 스마트채널 셋팅툴</h1>
+  <span class="badge">이미지 업로드 → 세트 → 연결 → 발행</span>
+  <span id="cfgWarn">환경변수(GFA_PROXY_BASE / GFA_API_KEY / TEAM_NAME) 미설정 — 발행 불가</span>
+</header>
+<main>
+
+  <!-- 좌: 계정/캠페인/광고그룹 트리 -->
+  <section class="col" id="colTree">
+    <h2>① 계정 · 광고그룹</h2>
+    <div class="card">
+      <div class="row">
+        <input id="accNo" class="grow" placeholder="광고계정 번호" inputmode="numeric">
+        <input id="accAlias" class="grow" placeholder="별칭 (선택)">
+        <button onclick="addAccount()">등록</button>
+      </div>
+      <div class="muted">계정 등록 후 캠페인을 펼쳐 광고그룹을 체크하고, 가운데에서 활성 세트를 선택한 뒤 아래 연결 버튼을 누르세요.</div>
+    </div>
+    <div id="accList"></div>
+    <button class="primary" onclick="linkChecked()">체크한 광고그룹 → 활성 세트에 연결</button>
+  </section>
+
+  <!-- 중: 소재세트 라이브러리 -->
+  <section class="col" id="colSets">
+    <h2>② 소재세트 라이브러리</h2>
+    <div class="card">
+      <div class="row">
+        <input id="newSetName" class="grow" placeholder="새 세트 이름 (예: 3월 프로모션 A)">
+        <input id="newSetColor" type="color" value="#03c75a" style="width:42px;padding:2px;height:32px;">
+        <button class="primary" onclick="createSet()">세트 생성</button>
+      </div>
+    </div>
+    <div id="setList"></div>
+  </section>
+
+  <!-- 우: 발행 -->
+  <section class="col" id="colPublish">
+    <h2>③ 발행</h2>
+    <div class="card">
+      <div id="pubSets"></div>
+      <label class="pubSel"><input type="checkbox" id="optOff" checked> 생성 직후 소재 OFF (검토 후 수동 ON)</label>
+      <button class="primary" id="btnPublish" onclick="publish()">발행하기</button>
+      <div class="muted">세트의 이미지 × 연결 광고그룹 조합마다 소재가 생성됩니다. 발행 전 조합 수를 확인하세요.</div>
+    </div>
+    <h2>로그</h2>
+    <div id="log"><span class="linfo">대기 중…</span></div>
+    <button onclick="showDebug()">마지막 GFA 응답 원본 보기</button>
+  </section>
+
+</main>
+<script>
+let sets = [], accounts = [], activeSetId = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function api(method, url, body, isForm) {
+  const opt = { method, headers: {} };
+  if (body && !isForm) { opt.headers['Content-Type'] = 'application/json'; opt.body = JSON.stringify(body); }
+  if (body && isForm) opt.body = body;
+  const r = await fetch(url, opt);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+  return d;
+}
+function log(msg, cls) {
+  const el = $('#log');
+  el.innerHTML += `\n<span class="${cls||'linfo'}">${esc(msg)}</span>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ---------- 초기화 ---------- */
+async function init() {
+  const h = await api('GET', '/api/health');
+  if (!h.configured) $('#cfgWarn').style.display = 'inline-block';
+  accounts = await api('GET', '/api/accounts');
+  sets = await api('GET', '/api/sets');
+  if (sets.length && !activeSetId) activeSetId = sets[0].id;
+  renderAccounts(); renderSets(); renderPublish();
+}
+init().catch(e => log('초기화 실패: ' + e.message, 'lerr'));
+
+/* ---------- 계정/트리 ---------- */
+async function addAccount() {
+  try {
+    await api('POST', '/api/accounts', { adAccountNo: $('#accNo').value.trim(), alias: $('#accAlias').value.trim() });
+    $('#accNo').value = ''; $('#accAlias').value = '';
+    accounts = await api('GET', '/api/accounts');
+    renderAccounts();
+  } catch (e) { alert(e.message); }
+}
+async function removeAccount(no) {
+  if (!confirm(`계정 ${no} 등록을 해제할까요? (연결된 링크는 유지됩니다)`)) return;
+  await api('DELETE', '/api/accounts/' + no);
+  accounts = accounts.filter(a => a.adAccountNo !== no);
+  renderAccounts();
+}
+function renderAccounts() {
+  $('#accList').innerHTML = accounts.map(a => `
+    <div class="acc" id="acc_${a.adAccountNo}">
+      <div class="accHead" onclick="toggleAcc(${a.adAccountNo})">
+        <span class="chev">▶</span><b>${esc(a.alias)}</b>
+        <span class="muted">#${a.adAccountNo}</span>
+        <span class="grow"></span>
+        <button onclick="event.stopPropagation();loadCampaigns(${a.adAccountNo})">캠페인 불러오기</button>
+        <button class="danger" onclick="event.stopPropagation();removeAccount(${a.adAccountNo})">✕</button>
+      </div>
+      <div class="tree hidden" id="tree_${a.adAccountNo}"><span class="muted">「캠페인 불러오기」를 눌러주세요.</span></div>
+    </div>`).join('') || '<div class="muted">등록된 계정이 없습니다.</div>';
+}
+function toggleAcc(no) {
+  const acc = $(`#acc_${no}`), tree = $(`#tree_${no}`);
+  acc.classList.toggle('open');
+  tree.classList.toggle('hidden');
+}
+async function loadCampaigns(accNo) {
+  const tree = $(`#tree_${accNo}`);
+  $(`#acc_${accNo}`).classList.add('open'); tree.classList.remove('hidden');
+  tree.innerHTML = '<span class="muted">불러오는 중…</span>';
+  try {
+    const camps = await api('GET', `/api/gfa/campaigns/${accNo}`);
+    tree.innerHTML = camps.map(c => `
+      <div class="camp" id="camp_${accNo}_${c.campaignNo}">
+        <div class="campHead" onclick="loadAdsets(${accNo},${c.campaignNo},'${esc(c.name).replace(/'/g,"\\'")}')">
+          <span class="chev">▶</span>
+          <span>${esc(c.name)}</span>
+          <span class="muted">${c.activated===false?'OFF':''}</span>
+        </div>
+        <div class="adsets hidden" id="adsets_${accNo}_${c.campaignNo}"></div>
+      </div>`).join('') || '<span class="muted">캠페인이 없습니다.</span>';
+  } catch (e) {
+    tree.innerHTML = `<span style="color:var(--warn)">${esc(e.message)}</span>`;
+  }
+}
+async function loadAdsets(accNo, campNo, campName) {
+  const wrap = $(`#camp_${accNo}_${campNo}`), box = $(`#adsets_${accNo}_${campNo}`);
+  wrap.classList.toggle('open');
+  box.classList.toggle('hidden');
+  if (box.dataset.loaded) return;
+  box.innerHTML = '<span class="muted">불러오는 중…</span>';
+  try {
+    const adsets = await api('GET', `/api/gfa/adsets/${accNo}/${campNo}`);
+    const alias = (accounts.find(a => a.adAccountNo === accNo) || {}).alias || accNo;
+    box.innerHTML = adsets.map(s => {
+      const pgcs = (s.placementGroupCodes || []).map(p =>
+        `<span class="pgc ${/SMARTCHANNEL/.test(p)?'sc':''}">${esc(p)}</span>`).join(' ');
+      return `<label class="adsetRow">
+        <input type="checkbox" class="adsetChk"
+          data-acc="${accNo}" data-alias="${esc(alias)}" data-camp="${campNo}"
+          data-campname="${esc(campName)}" data-no="${s.adSetNo}" data-name="${esc(s.name)}">
+        <span>${esc(s.name)}</span> ${pgcs}
+      </label>`;
+    }).join('') || '<span class="muted">광고그룹이 없습니다.</span>';
+    box.dataset.loaded = '1';
+  } catch (e) {
+    box.innerHTML = `<span style="color:var(--warn)">${esc(e.message)}</span>`;
+  }
+}
+async function linkChecked() {
+  if (!activeSetId) return alert('가운데에서 활성 세트를 먼저 선택/생성하세요.');
+  const checked = [...document.querySelectorAll('.adsetChk:checked')];
+  if (!checked.length) return alert('체크된 광고그룹이 없습니다.');
+  const links = checked.map(c => ({
+    adAccountNo: c.dataset.acc, accountAlias: c.dataset.alias,
+    campaignNo: c.dataset.camp, campaignName: c.dataset.campname,
+    adSetNo: c.dataset.no, adSetName: c.dataset.name,
+  }));
+  const s = await api('POST', `/api/sets/${activeSetId}/links`, { links });
+  Object.assign(sets.find(x => x.id === activeSetId), s);
+  checked.forEach(c => c.checked = false);
+  renderSets(); renderPublish();
+  log(`${links.length}개 광고그룹을 세트에 연결했습니다.`, 'lok');
+}
+
+/* ---------- 세트 ---------- */
+async function createSet() {
+  const name = $('#newSetName').value.trim() || '새 세트';
+  const s = await api('POST', '/api/sets', { name, color: $('#newSetColor').value });
+  sets.push(s); activeSetId = s.id;
+  $('#newSetName').value = '';
+  renderSets(); renderPublish();
+}
+function renderSets() {
+  $('#setList').innerHTML = sets.map(s => {
+    const combos = s.images.length * s.links.length;
+    return `
+    <div class="card setCard ${s.id===activeSetId?'active':''}" style="border-left-color:${esc(s.color)}"
+         onclick="setActive('${s.id}')">
+      <div class="setTitle">
+        <span class="dot" style="background:${esc(s.color)}"></span>
+        <input value="${esc(s.name)}" style="font-weight:700;background:transparent;border:none;padding:2px;"
+               onchange="updateSet('${s.id}',{name:this.value})" onclick="event.stopPropagation()">
+        <span class="muted">${s.images.length}이미지 · ${s.links.length}연결${combos?` · 발행 시 ${combos}소재`:''}</span>
+        <span class="grow"></span>
+        <button class="danger" onclick="event.stopPropagation();deleteSet('${s.id}')">삭제</button>
+      </div>
+      <div class="setGrid" onclick="event.stopPropagation()">
+        <label class="f">랜딩 URL
+          <input value="${esc(s.landingUrl)}" placeholder="https://..." onchange="updateSet('${s.id}',{landingUrl:this.value})">
+        </label>
+        <label class="f">광고 안내 문구 (altMessage, 2~100자)
+          <input value="${esc(s.altMessage)}" placeholder="예: 브랜드명 프로모션 안내" onchange="updateSet('${s.id}',{altMessage:this.value})">
+        </label>
+      </div>
+      <div class="thumbs" onclick="event.stopPropagation()">
+        ${s.images.map(i => `
+          <div class="thumb">
+            <img src="/files/${esc(i.file)}" title="${esc(i.label)}">
+            <div class="tinfo"><span>${i.w}×${i.h}</span><span>${Math.round(i.bytes/1024)}KB</span></div>
+            <button class="tx" onclick="removeImage('${s.id}','${i.id}')">✕</button>
+          </div>`).join('')}
+      </div>
+      <div class="dropzone" onclick="event.stopPropagation();pickFiles('${s.id}')"
+           ondragover="event.preventDefault();this.classList.add('over')"
+           ondragleave="this.classList.remove('over')"
+           ondrop="dropFiles(event,'${s.id}')">
+        PNG/JPG 드래그 또는 클릭하여 추가 (750×280 / 750×200 / 750×160 자동 감지)
+      </div>
+      <div class="chips" onclick="event.stopPropagation()">
+        ${s.links.map(l => `
+          <span class="chip" title="계정 ${l.adAccountNo} / ${esc(l.campaignName)}">
+            ${esc(l.accountAlias)} · ${esc(l.adSetName)}
+            <button onclick="removeLink('${s.id}',${l.adSetNo})">✕</button>
+          </span>`).join('') || '<span class="muted">연결된 광고그룹 없음 — 왼쪽 트리에서 체크 후 연결</span>'}
+      </div>
+    </div>`;
+  }).join('') || '<div class="muted">세트를 생성하세요.</div>';
+}
+function setActive(id) { activeSetId = id; renderSets(); }
+async function updateSet(id, patch) {
+  const s = await api('PUT', `/api/sets/${id}`, patch);
+  Object.assign(sets.find(x => x.id === id), s);
+  renderSets(); renderPublish();
+}
+async function deleteSet(id) {
+  if (!confirm('세트를 삭제할까요? 업로드한 이미지도 함께 삭제됩니다.')) return;
+  await api('DELETE', `/api/sets/${id}`);
+  sets = sets.filter(x => x.id !== id);
+  if (activeSetId === id) activeSetId = sets[0]?.id || null;
+  renderSets(); renderPublish();
+}
+function pickFiles(setId) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/png,image/jpeg'; inp.multiple = true;
+  inp.onchange = () => uploadImages(setId, inp.files);
+  inp.click();
+}
+function dropFiles(ev, setId) {
+  ev.preventDefault(); ev.currentTarget.classList.remove('over');
+  uploadImages(setId, ev.dataTransfer.files);
+}
+async function uploadImages(setId, files) {
+  if (!files || !files.length) return;
+  const fd = new FormData();
+  [...files].forEach(f => fd.append('files', f));
+  try {
+    const r = await api('POST', `/api/sets/${setId}/images`, fd, true);
+    Object.assign(sets.find(x => x.id === setId), r.set);
+    r.rejected.forEach(x => log(`거부: ${x.name} — ${x.reason}`, 'lerr'));
+    if (r.added.length) log(`이미지 ${r.added.length}개 추가됨`, 'lok');
+    renderSets(); renderPublish();
+  } catch (e) { alert(e.message); }
+}
+async function removeImage(setId, imgId) {
+  const s = await api('DELETE', `/api/sets/${setId}/images/${imgId}`);
+  Object.assign(sets.find(x => x.id === setId), s);
+  renderSets(); renderPublish();
+}
+async function removeLink(setId, adSetNo) {
+  const s = await api('DELETE', `/api/sets/${setId}/links/${adSetNo}`);
+  Object.assign(sets.find(x => x.id === setId), s);
+  renderSets(); renderPublish();
+}
+
+/* ---------- 발행 ---------- */
+function renderPublish() {
+  $('#pubSets').innerHTML = sets.map(s => {
+    const combos = s.images.length * s.links.length;
+    const ready = combos > 0 && /^https?:\/\//.test(s.landingUrl) && s.altMessage.trim().length >= 2;
+    return `<label class="pubSel">
+      <input type="checkbox" class="pubChk" value="${s.id}" ${ready?'checked':''} ${combos?'':'disabled'}>
+      <span class="dot" style="background:${esc(s.color)}"></span>
+      ${esc(s.name)} <span class="muted">(${combos}소재${ready?'':' · 설정 미완'})</span>
+    </label>`;
+  }).join('') || '<span class="muted">세트 없음</span>';
+}
+async function publish() {
+  const setIds = [...document.querySelectorAll('.pubChk:checked')].map(c => c.value);
+  if (!setIds.length) return alert('발행할 세트를 선택하세요.');
+  const total = sets.filter(s => setIds.includes(s.id)).reduce((n, s) => n + s.images.length * s.links.length, 0);
+  if (!confirm(`총 ${total}개 소재가 생성됩니다. 발행할까요?`)) return;
+  $('#btnPublish').disabled = true;
+  log(`발행 시작 — ${total}개 소재`, 'linfo');
+  try {
+    const r = await api('POST', '/api/publish', { setIds, turnOff: $('#optOff').checked });
+    r.results.forEach(x => {
+      if (x.ok) log(`✔ [${x.set}] ${x.image} (${x.size}) → ${x.adSet} · creativeNo=${x.creativeNo}`, 'lok');
+      else log(`✖ [${x.set}] ${x.image} (${x.size}) → ${x.adSet} · ${x.error}`, 'lerr');
+    });
+    (r.offResults || []).forEach(x =>
+      log(x.ok ? `OFF 처리: 계정 ${x.accountNo} ${x.count}개` : `OFF 실패: 계정 ${x.accountNo} — ${x.error}`, x.ok ? 'lok' : 'lerr'));
+    log(`완료 — 성공 ${r.ok} / 실패 ${r.failed}`, r.failed ? 'lerr' : 'lok');
+  } catch (e) {
+    log('발행 실패: ' + e.message, 'lerr');
+  } finally {
+    $('#btnPublish').disabled = false;
+  }
+}
+async function showDebug() {
+  const d = await api('GET', '/api/debug/last');
+  log('--- 마지막 GFA 호출 ---\n' + JSON.stringify(d, null, 2), 'linfo');
+}
+</script>
+</body>
+</html>
