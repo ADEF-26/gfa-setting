@@ -100,7 +100,8 @@ label.f{font-size:10.5px;color:var(--sub);display:flex;flex-direction:column;gap
 
   <!-- 중: 소재세트 라이브러리 -->
   <section class="col" id="colSets">
-    <h2>② 소재세트 라이브러리</h2>
+    <div class="row"><h2 class="grow">② 소재세트 라이브러리</h2>
+      <button onclick="window.open('/maker.html','_blank')">🎨 소재 제작툴 열기</button></div>
     <div class="card">
       <div class="row">
         <input id="newSetName" class="grow" placeholder="새 세트 이름 (예: 3월 프로모션 A)">
@@ -156,6 +157,13 @@ async function init() {
   renderAccounts(); renderSets(); renderPublish();
 }
 init().catch(e => log('초기화 실패: ' + e.message, 'lerr'));
+window.addEventListener('focus', async () => {
+  try {
+    sets = await api('GET', '/api/sets');
+    if (activeSetId && !sets.some(s => s.id === activeSetId)) activeSetId = sets[0]?.id || null;
+    renderSets(); renderPublish();
+  } catch (_) {}
+});
 
 /* ---------- 계정/트리 ---------- */
 async function addAccount() {
