@@ -247,6 +247,10 @@ app.delete('/api/sets/:id', (req, res) => {
 
 /* ---- 세트에 이미지 추가/삭제 ---- */
 app.post('/api/sets/:id/images', upload.array('files', 30), (req, res) => {
+  // multer는 파일명을 latin1로 해석하므로 UTF-8(한글 라벨) 복원
+  for (const f of (req.files || [])) {
+    try { f.originalname = Buffer.from(f.originalname, 'latin1').toString('utf8'); } catch (_) {}
+  }
   const s = db.sets.find(x => x.id === req.params.id);
   if (!s) return res.status(404).json({ error: '세트 없음' });
   const added = [], rejected = [];
